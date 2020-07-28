@@ -1,0 +1,80 @@
+openapi: 3.0.0
+info:
+  title: blob
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /blob:
+    post:
+      summary: Create a Blob with a random ID
+      operationId: create-blob
+      responses:
+        '201':
+          description: Created as Expected
+  '/blob/{blob_id}':
+    parameters:
+      - schema:
+          type: string
+        name: blob_id
+        in: path
+        required: true
+    get:
+      summary: Get a Blob by ID
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema: {}
+        '304':
+          description: Blob has not been modified
+        '404':
+          description: Not Found
+        '406':
+          description: The server cannot produce a response that matches any of the acceptable values
+      operationId: get-blob
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Accept
+    delete:
+      summary: Delete a Blob by ID
+      operationId: delete-blob
+      responses:
+        '202':
+          description: Accepted Delete
+        '404':
+          description: Blob not Found
+        '412':
+          description: Checksum provided did not match the blob's checksum
+      parameters: []
+    put:
+      summary: Create or Update a Blob by ID
+      operationId: update-blob
+      responses:
+        '201':
+          description: Accepted Update
+        '412':
+          description: Checksum provided did not match the blob's checksum
+  '/blob/{blob_id}/listen':
+    parameters:
+      - schema:
+          type: string
+        name: blob_id
+        in: path
+        required: true
+    get:
+      summary: Get a Blob by ID
+      responses:
+        '200':
+          description: OK
+          content:
+            'text/event-stream':
+              schema: {}
+        '404':
+          description: Not Found
+      operationId: listen-blob
+components:
+  schemas: {}
