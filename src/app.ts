@@ -45,8 +45,8 @@ async function getContainer (): Promise<tsyringe.DependencyContainer> {
 
   container.register<Redis.Redis>(Redis, { useFactory: () => new Redis(config.storage.redis.url) });
 
-  container.register<BlobRepository>(RedisBlobRepository, { useFactory: c => new RedisBlobRepository(c.resolve<Redis.Redis>(Redis)) });
-  container.register<BlobRepository>(MemoryBlobRepository, { useFactory: () => new MemoryBlobRepository(config.storage.memory) });
+  container.register<BlobRepository>(RedisBlobRepository, { useFactory: c => new RedisBlobRepository(c.resolve<Redis.Redis>(Redis), config.blob.maxAge) });
+  container.register<BlobRepository>(MemoryBlobRepository, { useFactory: () => new MemoryBlobRepository({ ...config.storage.memory, maxAge: config.blob.maxAge }) });
 
   if (config.blob.source === 'memory') {
     container.register<BlobRepository>('BlobRepository', { useToken: MemoryBlobRepository });

@@ -75,12 +75,14 @@ export class MemoryBlobRepository extends EventEmitter implements BlobRepository
 
 export class RedisBlobRepository extends EventEmitter implements BlobRepository {
   private readonly client: Redis;
+  private readonly maxAge: number;
   private readonly lock: Redlock;
 
-  constructor (client: Redis) {
+  constructor (client: Redis, maxAge: number = Infinity) {
     super();
 
     this.client = client;
+    this.maxAge = maxAge;
     this.lock = new Redlock([client]);
   }
 
@@ -140,10 +142,17 @@ export class RedisBlobRepository extends EventEmitter implements BlobRepository 
       updatedAt: Date.now()
     };
 
-    await Promise.all([
-      this.client.setBuffer(resourceName, await getRawBody(readable)),
-      this.client.set(metadataResourceName, JSON.stringify(metadata))
-    ]);
+    if (this.maxAge === Infinity) {
+      await Promise.all([
+        this.client.setBuffer(resourceName, await getRawBody(readable)),
+        this.client.set(metadataResourceName, JSON.stringify(metadata))
+      ]);
+    } else {
+      await Promise.all([
+        this.client.setBuffer(resourceName, await getRawBody(readable), 'PX', this.maxAge),
+        this.client.set(metadataResourceName, JSON.stringify(metadata), 'PX', this.maxAge)
+      ]);
+    }
 
     this.emit('update', { id });
 
