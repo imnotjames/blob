@@ -3,7 +3,7 @@ import tsyringe from 'tsyringe';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import logger from 'koa-logger';
-import cors from 'koa-cors';
+import cors from '@koa/cors';
 import { getRouter } from '@imnotjames/koa-openapi-router';
 import Redis from 'ioredis';
 
@@ -69,7 +69,7 @@ export async function getApp (): Promise<Koa> {
   const app = new Koa();
 
   app.use(logger());
-  app.use(cors());
+  app.use(cors({ exposeHeaders: ['Location', 'Link', 'ETAG'] }));
 
   app
     .use(router.routes())
