@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node build/server.js",
     "compile": "tsc --outDir ./build/",
-    "dev": "nodemon -w 'reference/**/*.yaml' -w 'src/**/*.ts' --exec node -- -r 'dotenv/config' --experimental-vm-modules --loader ts-node/esm.mjs src/server.ts",
+    "dev": "nodemon -w 'reference/**/*.yaml' -w 'src/**/*.ts' --exec node -- -r 'dotenv/config' --experimental-vm-modules --experimental-top-level-await --loader ts-node/esm.mjs src/server.ts",
     "lint": "eslint -c .eslintrc.json --ext .ts src/**/*.ts"
   },
   "author": "James Ward <james@notjam.es>",
