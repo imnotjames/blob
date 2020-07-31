@@ -41,40 +41,56 @@ export class BlobRouteFactory implements RouteFactory {
     response.set('Location', router.url('get-blob', { blob_id: id }));
   }
 
-  private async listenBlob({ params: { blob_id: id }, response }: Context) {
+  private async listenBlob({ req, res, params: { blob_id: id }, response }: Context) {
+    response.set('Connection', 'keep-alive');
+    response.set('Cache-Control', 'no-cache');
     response.type = 'text/event-stream';
     response.body = new PassThrough();
 
-    const send = (id: string, type: string, message?: string) => {
+    const send = (id: string, type: string, message: string = '') => {
+      response.body.write(`id: ${id}\n`);
+
       response.body.write(`event: ${type}\n`);
 
-      if (message != null) {
-
-        for (const line of message.split('\n')) {
-          response.body.write(`data: ${line}\n`);
-        }
+      for (const line of message.split('\n')) {
+        response.body.write(`data: ${line}\n`);
       }
-
-      response.body.write(`id: ${id}\n`);
 
       response.body.write('\n');
     };
 
+    response.body.write('retry: 10000\n');
+
     response.body.write('\n');
 
-    this.repository.on(`update`, async ({ id: updatedId }) => {
+    const onUpdate = async ({ id: updatedId }: { id: string }) => {
       if (id === updatedId) {
         const blob = await this.repository.getBlob(id);
 
         send(blob.checksum, 'update');
       }
-    });
+    };
 
-    this.repository.on(`delete`, async ({ id: deletedId }) => {
+    const onDelete = async ({ id: deletedId }: { id: string }) => {
       if (id === deletedId) {
         send(Date.now().toString(), 'delete');
       }
-    });
+    };
+
+    this.repository.on(`update`, onUpdate);
+    this.repository.on(`delete`, onDelete);
+
+    const end = () => {
+      console.log("Client disconnected");
+      response.body.end();
+
+      this.repository.off('update', onUpdate);
+      this.repository.off('delete', onDelete);
+    };
+
+    req.on('close', end);
+    req.on('finish', end);
+    req.on('error', end);
   }
 
   private async getBlob ({ params: { blob_id: id }, request: { accept, headers }, response }: Context) {
