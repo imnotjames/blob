@@ -28,7 +28,7 @@ export interface Blob {
 export interface BlobRepository extends EventEmitter {
   getBlob (id: string): Promise<Blob>;
 
-  updateBlob (id: string, blob: Blob): Promise<void>;
+  updateBlob (id: string, blob: BlobInput): Promise<void>;
 
   deleteBlob (id: string): Promise<void>;
 }
@@ -52,12 +52,13 @@ export class MemoryBlobRepository extends EventEmitter implements BlobRepository
     return {
       mimeType: blob.mimeType,
       updatedAt: blob.updatedAt,
+      expiresAt: Math.floor(blob.updatedAt + this.store.maxAge),
       checksum: blob.checksum,
       blob: Readable.from(blob.blob)
     };
   }
 
-  async updateBlob (id: string, blob: Blob): Promise<void> {
+  async updateBlob (id: string, blob: BlobInput): Promise<void> {
     this.store.set(id, {
       mimeType: blob.mimeType,
       updatedAt: Date.now(),
