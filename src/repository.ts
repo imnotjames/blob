@@ -18,7 +18,9 @@ export interface BlobInput {
 export interface Blob {
   mimeType: string;
 
-  updatedAt?: number;
+  updatedAt: number;
+
+  expiresAt?: number;
 
   checksum: string;
 
@@ -52,7 +54,7 @@ export class MemoryBlobRepository extends EventEmitter implements BlobRepository
     return {
       mimeType: blob.mimeType,
       updatedAt: blob.updatedAt,
-      expiresAt: Math.floor(blob.updatedAt + this.store.maxAge),
+      expiresAt: this.store.maxAge === Infinity ? undefined: Math.floor(blob.updatedAt + this.store.maxAge),
       checksum: blob.checksum,
       blob: Readable.from(blob.blob)
     };
@@ -119,7 +121,8 @@ export class RedisBlobRepository extends EventEmitter implements BlobRepository 
 
     return {
       mimeType: metadata?.mimeType,
-      updatedAt: metadata?.updatedAt,
+      updatedAt: metadata.updatedAt,
+      expiresAt: this.maxAge === Infinity ? undefined: Math.floor(metadata.updatedAt + this.maxAge),
       checksum: metadata?.checksum,
       blob: Readable.from(buffer)
     };

@@ -24,6 +24,21 @@ paths:
       responses:
         '200':
           description: OK
+          headers:
+            Last-Modified:
+              schema:
+                type: string
+                format: date-time
+              description: When the blob was last updated
+            Expires:
+              schema:
+                type: string
+                format: date-time
+              description: When the blob expires and will be removed
+            ETAG:
+              schema:
+                type: string
+              description: The checksum of the blob which can be used with `If-None-Match` and `If-Match`
           content:
             '*/*':
               schema: {}

@@ -109,6 +109,7 @@ export class BlobRouteFactory implements RouteFactory {
     const {
       mimeType,
       updatedAt,
+      expiresAt,
       checksum,
       blob: readable
     } = blob;
@@ -118,12 +119,19 @@ export class BlobRouteFactory implements RouteFactory {
       return;
     }
 
-    response.set('ETAG', checksum);
     try {
       response.set('Last-Modified', new Date(updatedAt).toISOString());
     } catch (e) {
       // Do nothing
     }
+
+    try {
+      response.set('Expires', new Date(expiresAt).toISOString());
+    } catch (e) {
+      // Do nothing
+    }
+
+    response.set('ETAG', checksum);
     response.set('Content-Type', mimeType);
 
     response.status = 200;
