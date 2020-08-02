@@ -54,6 +54,14 @@ paths:
             type: string
           in: header
           name: Accept
+        - schema:
+            type: string
+          in: header
+          name: If-Match
+        - schema:
+            type: string
+          in: header
+          name: If-None-Match
     delete:
       summary: Delete a Blob by ID
       operationId: delete-blob
@@ -64,7 +72,15 @@ paths:
           description: Blob not Found
         '412':
           description: Checksum provided did not match the blob's checksum
-      parameters: []
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: If-Match
+        - schema:
+            type: string
+          in: header
+          name: If-None-Match
     put:
       summary: Create or Update a Blob by ID
       operationId: update-blob
@@ -73,6 +89,15 @@ paths:
           description: Accepted Update
         '412':
           description: Checksum provided did not match the blob's checksum
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: If-Match
+        - schema:
+            type: string
+          in: header
+          name: If-None-Match
   '/blob/{blob_id}/listen':
     parameters:
       - schema:
