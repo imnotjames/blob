@@ -20,6 +20,36 @@ export class BlobRouteFactory implements RouteFactory {
     this.repository = repository;
   }
 
+  private checkMatchingRules(headers: { [name: string]: string }, checksum: string, omissionIsMatch = true): boolean {
+    if ('if-match' in headers) {
+      const allowed = headers['if-match'];
+
+      if (allowed === '*' && checksum == null) {
+        // Special case - "*" matches anything except "null"-ish (eg, nothing.)
+        // This means is CANNOT be null - if it is, that's a failure
+        return false;
+      } else if (allowed !== checksum) {
+        return false;
+      }
+    }
+
+    // If-None-Match is effectively a negation.
+    if ('if-none-match' in headers) {
+      const disallowed = headers['if-none-match'];
+
+      if (disallowed === '*' && checksum != null) {
+        // Special case - "*" matches anything except "null"-ish (eg, nothing.)
+        // Because this is a negation, this means it MUST BE NULL.
+        return false;
+      } else if (disallowed === checksum) {
+        return false;
+      }
+    }
+
+    // Only return true if both are good or are omitted!
+    return true;
+  }
+
   private async createBlob ({ req, request: { headers }, response, router }: Context) {
     const id = uuidv4();
     const blob = await getRawBody(req);
@@ -106,6 +136,11 @@ export class BlobRouteFactory implements RouteFactory {
       return;
     }
 
+    if (!this.checkMatchingRules(headers, blob?.checksum, false)) {
+      response.status = 304;
+      return;
+    }
+
     const {
       mimeType,
       updatedAt,
@@ -113,11 +148,6 @@ export class BlobRouteFactory implements RouteFactory {
       checksum,
       blob: readable
     } = blob;
-
-    if ('if-none-match' in headers && headers['if-none-match'] === checksum) {
-      response.status = 304;
-      return;
-    }
 
     try {
       response.set('Last-Modified', new Date(updatedAt).toISOString());
@@ -141,8 +171,9 @@ export class BlobRouteFactory implements RouteFactory {
   private async updateBlob ({ req, request: { headers }, params: { blob_id: id }, response, router }: Context) {
     const blob = await this.repository.getBlob(id);
 
-    if ('if-match' in headers && headers['if-match'] !== blob.checksum) {
-      // TODO: Create a lock - This could cause a race condition between now and when the update occurs.
+    // TODO: Create a lock - This could cause a race condition
+    //       between when the check happens and when the update occurs.
+    if (!this.checkMatchingRules(headers, blob?.checksum)) {
       response.status = 412;
       return;
     }
@@ -174,10 +205,9 @@ export class BlobRouteFactory implements RouteFactory {
       return;
     }
 
-    const { checksum } = blob;
-
-    if ('if-match' in headers && headers['if-match'] !== checksum) {
-      // TODO: Create a lock - This could cause a race condition between now and when the update occurs.
+    // TODO: Create a lock - This could cause a race condition
+    //       between when the check happens and when the delete occurs.
+    if (!this.checkMatchingRules(headers, blob?.checksum)) {
       response.status = 412;
       return;
     }
