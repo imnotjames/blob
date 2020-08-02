@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;800&display=swap" rel="stylesheet">
+    <style>
+        #bubbles {
+            position: absolute;
+            height: 60px;
+            top: 100%;
+            left: -5vw;
+            right: -5vw;
+            margin-top: -45px;
+
+            filter:url("#blob");
+            background-color: white;
+            opacity: 1;
+            pointer-events: none;
+        }
+
+        .bubble {
+            position: absolute;
+            background: white;
+            border-radius:100%;
+            left: var(--left, 50%);
+            animation:
+                    bubble-size var(--time, 4s) ease-in infinite var(--delay, 0s),
+                    bubble-move var(--time, 4s) ease-in infinite var(--delay, 0s);
+            transform:translate(-50%, 100%);
+
+            max-width: 60px;
+            max-height: 60px;
+        }
+
+        @keyframes bubble-size {
+            0%, 75% {
+                width:calc(1vw + var(--size, 0.5) * 4vw);
+                height:calc(1vw + var(--size, 0.5) * 4vw);
+            }
+            100% {
+                width:0px;
+                height:0px;
+            }
+        }
+
+        @keyframes bubble-move {
+            0% {
+                bottom:0px;
+            }
+            100% {
+                bottom:calc(80px + var(--distance, 0.5) * 180px);
+            }
+        }
+    </style>
+    <script type="text/javascript">
+
+      function createBubbles () {
+        const bubbleContainer = document.getElementById('bubbles');
+
+        for (let i = 0; i < 128; i++) {
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble';
+
+          bubble.style.setProperty('--size', Math.random());
+          bubble.style.setProperty('--distance', Math.random());
+          bubble.style.setProperty('--left', (-5 + Math.random() * 110) + '%');
+          bubble.style.setProperty('--time', (4 + Math.random() * 4) + 's');
+          bubble.style.setProperty('--delay', (-1 * (4 + Math.random() * 4)) + 's');
+          bubbleContainer.appendChild(bubble);
+        }
+      }
+
+      window.addEventListener('load', createBubbles);
+    </script>
+    <style>
+        html, body {
+            font-family: 'Open Sans', sans-serif;
+            color: #262626;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: #262626;
+            clear: both;
+
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            color: white;
+
+            overflow: hidden;
+            position: relative;
+            border: 0;
+        }
+
+        header h1 {
+            font-weight: bolder;
+            text-transform: uppercase;
+            font-size: 64px;
+            line-height: 64px;
+            letter-spacing: 2px;
+        }
+
+        #github-link {
+            z-index: 1;
+        }
+
+        main {
+            padding: 0 10px;
+            margin: 80px auto;
+            max-width: 720px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        main section {
+            margin-bottom: 4em;
+        }
+
+        main a {
+            color: #262626;
+        }
+
+        main label {
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        main pre {
+            margin: 1em 0;
+            overflow-x: auto;
+        }
+
+        main pre code {
+            overflow-x: auto;
+            border-radius: 4px;
+            padding: 12px 18px;
+            background-color: #EAEAEA;
+            display: block;
+        }
+
+        main p code {
+            background-color: #777;
+            color: white;
+            padding: 0.25em 0.5em;
+            margin: 0 0.25em;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        #blob-listen {
+            min-height: 1em;
+            overflow-y: auto;
+            border-left: 4px solid #999;
+            padding-left: 4px;
+        }
+
+        button, a[role=button] {
+            cursor: pointer;
+            background-color: #262626;
+            color: rgba(100%, 0%, 0%, 0);
+            text-shadow: 0 0 0 white;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 0;
+            padding: 10px 24px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        #blob-get {
+            border-left: 4px solid #999;
+            padding: 12px 8px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+
+        #blob-get img {
+            max-width: 128px;
+            max-height: 128px;
+        }
+
+        main textarea, main input {
+            box-sizing: border-box;
+            width: 100%;
+            resize: vertical;
+        }
+    </style>
+    <script type="text/javascript">
+      const BASE_URL = new URL(window.location.origin);
+
+      function createBlob (body) {
+        const url = new URL(`/blob/`, BASE_URL);
+        return fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'text/plain' } })
+            .then(r => r.headers.get('Location').substring(6));
+      }
+
+      function getBlob (id) {
+        const url = new URL(`/blob/${encodeURIComponent(id)}`, BASE_URL);
+        return fetch(url)
+            .then(r => r.blob());
+      }
+
+      function deleteBlob (id) {
+        const url = new URL(`/blob/${encodeURIComponent(id)}`, BASE_URL);
+        return fetch(url, { method: 'DELETE' });
+      }
+
+      function putBlob (id, type, body) {
+        const url = new URL(`/blob/${encodeURIComponent(id)}`, BASE_URL);
+        return fetch(url, { method: 'PUT', body, headers: { 'Content-Type': type } });
+      }
+
+      function listenBlob (id) {
+        const url = new URL(`/blob/${encodeURIComponent(id)}/listen`, BASE_URL);
+        return new EventSource(url);
+      }
+
+      function debounce (fn, wait = 1) {
+        let timeout;
+        return (...args) => {
+          if (!timeout) {
+            clearTimeout(timeout);
+            timeout = setTimeout(
+                () => {
+                  fn.call(this, ...args);
+                  timeout = null;
+                },
+                wait
+            );
+          }
+        };
+      }
+
+      function updateExamples (id) {
+        const exampleUrlCreate = document.getElementById('example-create-url');
+        const exampleUrlGet = document.getElementById('example-get-url');
+        const exampleUrlDelete = document.getElementById('example-delete-url');
+        const exampleUrlPut = document.getElementById('example-put-url');
+        const exampleUrlListen = document.getElementById('example-listen-url');
+
+        exampleUrlCreate.innerText = new URL(`/blob/`, BASE_URL).toString();
+        exampleUrlGet.innerText = new URL(`/blob/${encodeURIComponent(id)}`, BASE_URL).toString();
+        exampleUrlDelete.innerText = new URL(`/blob/${encodeURIComponent(id)}`, BASE_URL).toString();
+        exampleUrlPut.innerText = new URL(`/blob/${encodeURIComponent(id)}`, BASE_URL).toString();
+        exampleUrlListen.innerText = new URL(`/blob/${encodeURIComponent(id)}/listen`, BASE_URL).toString();
+      }
+
+
+      function refreshBlob (id) {
+        const blobElement = document.getElementById('blob-get');
+
+        const typeElement = document.getElementById('blob-update-mime');
+        const contentsElement = document.getElementById('blob-update-contents');
+
+        return getBlob(id)
+            .then(
+                blob => {
+                  if (document.activeElement !== typeElement) {
+                    typeElement.value = blob.type;
+                  }
+
+                  if (blob.type.startsWith('image/')) {
+                    blobElement.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(blob);
+                    blobElement.appendChild(img);
+
+                    if (document.activeElement !== contentsElement) {
+                      contentsElement.value = '[Binary Data]';
+                    }
+                  } else if (
+                      blob.type.startsWith('text/') ||
+                      blob.type.startsWith('application/json') ||
+                      blob.type.startsWith('application/x-www-form-urlencoded')
+                  ) {
+                    blob.text().then(t => {
+                      blobElement.innerText = t;
+
+                      if (document.activeElement !== contentsElement) {
+                        contentsElement.value = t;
+                      }
+                    });
+                  } else {
+                    blobElement.innerHTML = '<code>Binary Data</code>';
+
+                    if (document.activeElement !== contentsElement) {
+                      contentsElement.value = '[Binary Data]';
+                    }
+                  }
+                }
+            );
+      }
+
+
+      function bindBlobRetrieval (id) {
+        const blobListenElement = document.getElementById('blob-listen');
+
+        if (this.blobListener) {
+          this.blobListener.close();
+        }
+
+        this.blobListener = listenBlob(id);
+
+        this.blobListener.addEventListener('update', () => refreshBlob(id));
+        this.blobListener.addEventListener('delete', () => refreshBlob(id));
+
+        this.blobListener.addEventListener('update', () => blobListenElement.innerHTML += '&#127381; ');
+        this.blobListener.addEventListener('delete', () => blobListenElement.innerHTML += '&#128465; ');
+
+        return this.blobListener;
+      }
+
+      function bindBlobUpdate (id) {
+        const typeElement = document.getElementById('blob-update-mime');
+        const contentsElement = document.getElementById('blob-update-contents');
+
+        const update = debounce(
+            () => putBlob(id, typeElement.value, contentsElement.value),
+            150
+        );
+
+        typeElement.onkeydown = update;
+        contentsElement.onkeydown = update;
+      }
+
+      function bindBlobDelete (id) {
+        const deleteElement = document.getElementById('blob-delete');
+        deleteElement.onclick = () => deleteBlob(id);
+      }
+
+      function bindBlobCreate () {
+        const createElement = document.getElementById('blob-create');
+
+        createElement.onclick = () => {
+          window.location.hash = '';
+          initialize();
+        }
+      }
+
+      function bindBlobRetrievalWatchdog (id) {
+        if (this.timeout) {
+          clearTimeout(this.timeout);
+        }
+
+        if (this.blobListener && this.listenerId !== id) {
+          this.blobListener.close();
+          this.blobListener = null;
+        }
+
+        if (!this.blobListener) {
+          this.blobListener = bindBlobRetrieval(id);
+          this.listenerId = id;
+        }
+
+        if (!this.rebind) {
+          this.rebind = () => bindBlobRetrievalWatchdog(id);
+        }
+
+        // On messages, reset the watchdog.
+        for (const type of ["update", "message", "delete"]) {
+          this.blobListener.removeEventListener(type, this.rebind);
+          this.blobListener.addEventListener(type, this.rebind);
+        }
+
+        this.timeout = setTimeout(
+            () => {
+              if (!this.blobListener || this.blobListener.readyState !== 1) {
+                this.blobListener = bindBlobRetrieval(id);
+              }
+
+              bindBlobRetrievalWatchdog(id);
+            },
+            3000
+        );
+      }
+
+      function initialize () {
+        let blobId = window.location.hash.substring(1);
+
+        if (!blobId) {
+            createBlob("Hello, World!")
+                .then(
+                    id => {
+                      window.location.hash = '#' + id
+                      initialize();
+                    }
+                );
+            return;
+          }
+
+          bindBlobCreate();
+          updateExamples(blobId);
+          bindBlobUpdate(blobId);
+          bindBlobDelete(blobId);
+          bindBlobRetrievalWatchdog(blobId);
+
+          refreshBlob(blobId);
+      }
+
+      window.addEventListener('load', initialize);
+    </script>
+    <body>
+        <header>
+            <svg style="position:fixed; top:100vh">
+                <defs>
+                    <filter id="blob">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"></feGaussianBlur>
+                        <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 30 -9" result="blob"></feColorMatrix>
+                        <feComposite in="SourceGraphic" in2="blob" operator="atop"></feComposite>
+                    </filter>
+                </defs>
+            </svg>
+
+            <div id="bubbles"></div>
+
+            <h1>
+                blob.fyi
+            </h1>
+
+            <a id="github-link" role="button" href="https://github.com/imnotjames/blob">
+                Check out the Source on Github
+            </a>
+        </header>
+
+        <main>
+
+            <p>
+                This is a little service for creating, viewing, and monitoring
+                changes to small bits of temporary data online.  This is aimed
+                at creating prototypes or for use during hackathons.
+            </p>
+
+            <h2>
+                How does it work?
+            </h2>
+
+            <section id="example-create">
+                <h3>
+                    Create a Blob with a Random Name
+                </h3>
+
+                <pre><code>curl -X POST <span id="example-create-url">api.blob.fyi/blob</span> -d "Hello World"</code></pre>
+
+                <button id="blob-create">&#128465;&nbsp;&nbsp;&nbsp;Create a new Blob</button>
+
+                <p>
+                    Great!  You will get back a <code>Location</code> header referencing a new blob.
+                </p>
+                <p>
+                    Any <code>Content-Type</code> you send will be associated with your new blob and returned
+                    back with it.
+                </p>
+            </section>
+
+            <section id="example-put">
+                <h3>
+                    Create or Update a Blob
+                </h3>
+
+                <pre><code>curl -X PUT <span id="example-put-url">api.blob.fyi/blob/example</span> -d "Hello!"</code></pre>
+
+                <p>
+                    Now that you've got a name for your blob you can update it.  This can either be from the
+                    <code>Location</code> header from a <code>POST /blob/</code> or it can be any name you'd like.
+                </p>
+
+                <p>
+                    Again, any <code>Content-Type</code> you send will be associated with your new blob and returned
+                    back with it.
+                </p>
+
+                <label for="blob-update-mime">Update your Blob Content Type</label>
+                <input id="blob-update-mime" />
+
+                <label for="blob-update-contents">Update your Blob</label>
+                <textarea id="blob-update-contents"></textarea>
+            </section>
+
+            <section id="example-get">
+                <h3>
+                    Retrieve a Blob
+                </h3>
+
+                <pre><code>curl <span id="example-get-url">api.blob.fyi/blob/example</span></code></pre>
+
+                <pre id="blob-get"></pre>
+
+                <p>
+                    Your blob request accepts many headers to change the behavior of the blob retrieval.
+                </p>
+
+                <p>
+                    Your blob will respond with the payload you sent to it, along with a number of headers
+                    describing information about it.
+                </p>
+            </section>
+
+            <section id="example-delete">
+                <h3>
+                    Delete a Blob
+                </h3>
+
+                <pre><code>curl <span id="example-delete-url">api.blob.fyi/blob/example</span></code></pre>
+
+                <button id="blob-delete">&#128465;&nbsp;&nbsp;&nbsp;Delete Blob</button>
+            </section>
+
+            <section id="example-listen">
+                <h3>
+                    Listen to Blob Updates
+                </h3>
+
+                <pre><code>curl <span id="example-listen-url">api.blob.fyi/blob/example/listen</span></code></pre>
+
+                <div id="blob-listen"></div>
+
+                <p>
+                    Blob Updates may be listened to by using
+                    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events">Server-Sent events</a>.
+                    There are multiple event types to denote different lifecycle events.
+                </p>
+
+                <p>
+                    <code>update</code> is both a creation and an update of a blob.
+                    At this time the <code>update</code> event does not
+                </p>
+
+                <p>
+                    <code>delete</code> is emitted when a blob has been deleted.
+                    This does not prevent you from continuing to listen to this blob.
+                </p>
+
+                <p>
+                    Server-Sent events essentially have comments - when a line begins with <code>:</code>.
+                    As such, the blob server may periodically send <code>:ping</code> to keep the connection
+                    alive.
+                </p>
+            </section>
+
+            <section id="api-reference">
+                <h3>
+                    API Reference
+                </h3>
+
+                <p>
+                    The API is documented via OpenAPI 3.
+                    You can check
+                    <a href="https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/imnotjames/blob/master/reference/blob.v1.yaml">
+                        out the full API reference via ReDoc
+                    </a>.
+                </p>
+            </section>
+
+            <hr />
+
+            <h2>
+                Examples
+            </h2>
+
+            <a href="/chat/#chat.meta.blob">Chat Implemented with Blob</a>
+        </main>
+    </body>
+</html>

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;800&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            font-family: 'Open Sans', sans-serif;
+            color: #262626;
+        }
+
+        #chat-toolbar {
+            padding: 0 8px;
+            height: 48px;
+            z-index: 1;
+            box-shadow: 0 0 4px 0 rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        #chat-toolbar #chat-connection-indicator {
+            width: 10px;
+            height: 10px;
+            transition: background-color 0.25s;
+            border-radius: 10px;
+            margin-right: 10px;
+
+            background-color: #999;
+        }
+
+        #chat-toolbar #chat-connection-indicator[title=Connecting] {
+            background-color: #f2fde4;
+        }
+
+        #chat-toolbar #chat-connection-indicator[title=Connected] {
+            background-color: #41c300;
+        }
+
+        #chat-toolbar #chat-channel-indicator {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        #chat-toolbar #chat-handle-indicator {
+            cursor: pointer;
+        }
+
+        #chat-toolbar #chat-avatar-indicator {
+            cursor: pointer;
+            background-size: cover;
+            background-repeat: no-repeat;
+            border-radius: 32px;
+            margin: 8px;
+            height: 32px;
+            width: 32px;
+        }
+
+        #chat-pane {
+            flex: 1;
+            background-color: #eceff1;
+            color: #262626;
+            padding: 20px 10px;
+            overflow-y: scroll;
+        }
+
+        #chat-pane article {
+            position: relative;
+
+            padding-bottom: 18px;
+            margin: 24px 0;
+        }
+
+        #chat-pane > aside {
+            font-size: 12px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        #chat-pane > aside span {
+            background: #e3e7ea;
+            padding: 0.5em 1em;
+            border-radius: 10px;
+        }
+
+        #chat-pane article > hr {
+            clear: both;
+            border: 0;
+            margin: 0;
+        }
+
+        #chat-pane article header div {
+            position: absolute;
+            top: 0;
+            left: 8px;
+            width: 48px;
+            height: 48px;
+            border-radius: 48px;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        #chat-pane article header h2 {
+            font-size: 12px;
+            font-weight: normal;
+            line-height: 12px;
+            position: absolute;
+            bottom: 0;
+            left: 84px;
+            margin: 0;
+        }
+
+        #chat-pane article section {
+            position: relative;
+            border-radius: 0 8px 8px 8px;
+            margin-left: 74px;
+            margin-top: 4px;
+            margin-right: 10px;
+            padding: 10px 15px;
+            background-color: white;
+            box-shadow: 0px 0 5px -4px black;
+            float: left;
+        }
+
+        #chat-pane article section:before {
+            content: '';
+            border-style: solid;
+            border-width: 10px 0px 10px 10px;
+            border-color: white transparent transparent transparent;
+            position: absolute;
+            left: -10px;
+            top: 0;
+        }
+
+        #chat-pane article section :first-child {
+            margin-top: 0;
+        }
+
+        #chat-pane article section :last-child {
+            margin-bottom: 0;
+        }
+
+        #chat-input {
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid #cbcdce;
+        }
+
+        #chat-input textarea {
+            outline: none !important;
+            resize: none;
+            border-radius: 0;
+            border: 0;
+            font-size: 14px;
+            line-height: 16px;
+            min-height: 16px;
+            max-height: 50vh;
+            padding: 12px 24px;
+            overflow-x: hidden;
+        }
+    </style>
+    <script type="text/javascript">
+      let source;
+      const channel = decodeURIComponent(window.location.hash.slice(1));
+
+      const BASE_URL = new URL(window.location.origin);
+
+      function setHandle (handle) {
+        window.localStorage.setItem('chat-handle', handle);
+      }
+
+      function getHandle () {
+        let handle = window.localStorage.getItem('chat-handle');
+        if (!handle) {
+          handle = Math.random().toString(36).substring(2, 8);
+          setHandle(handle);
+        }
+        return handle;
+      }
+
+      function getChannel (channel) {
+        const channelUrl = new URL(`/blob/${encodeURIComponent(channel)}`, BASE_URL);
+        return fetch(
+            channelUrl,
+            {
+              mode: 'cors'
+            }
+        ).then(r => r.json());
+      }
+
+      function putChannel (channel, handle, text) {
+        const channelUrl = new URL(`/blob/${encodeURIComponent(channel)}`, BASE_URL);
+        return fetch(
+            channelUrl,
+            {
+              mode: 'cors',
+              method: 'PUT',
+              body: JSON.stringify({timestamp: Date.now(), handle, text})
+            }
+        );
+      }
+
+      function listenChannel (channel) {
+        const chatEventSourceUrl = new URL(`/blob/${encodeURIComponent(channel)}/listen`, BASE_URL);
+        return new EventSource(chatEventSourceUrl);
+      }
+
+      function getAvatarImage (handle) {
+        return `https://api.adorable.io/avatars/285/${encodeURIComponent(handle)}.png`;
+      }
+
+      function getTimeString (timestamp) {
+        return new Date(timestamp)
+            .toLocaleTimeString('en-US',  { hour: 'numeric',  hour12: true,  minute: 'numeric' });
+      }
+
+      function getMessageElement ({ timestamp, handle, text }) {
+        const article = document.createElement('article');
+        const header = document.createElement('header');
+        const avatar = document.createElement('div');
+        const name = document.createElement('h2');
+        const content = document.createElement('section');
+
+        avatar.style.backgroundImage = `url(${getAvatarImage(handle)})`;
+        name.innerText = handle || 'Unknown User';
+        name.innerText += ' \u2022 ' + getTimeString(timestamp);
+
+        for (const line of text.split('\n')) {
+          const paragraph = document.createElement('p');
+          paragraph.innerText = line;
+          content.appendChild(paragraph);
+        }
+
+        header.appendChild(avatar);
+        header.appendChild(name);
+        article.appendChild(header);
+        article.appendChild(content);
+        article.appendChild(document.createElement('hr'));
+        return article;
+      }
+
+      function refreshToolbar () {
+        const chatChannelIndicator = document.getElementById('chat-channel-indicator');
+        const chatConnectionIndicator = document.getElementById('chat-connection-indicator');
+        const chatHandleIndicator = document.getElementById('chat-handle-indicator');
+        const chatAvatarIndicator = document.getElementById('chat-avatar-indicator');
+
+        if (!source || source.readyState === 0) {
+          chatConnectionIndicator.title = 'Connecting';
+        } else if (source.readyState === 1) {
+          chatConnectionIndicator.title = 'Connected';
+        } else {
+          chatConnectionIndicator.title = 'Not Connected';
+        }
+
+        chatChannelIndicator.innerText = '#' + channel;
+        chatHandleIndicator.innerText = getHandle();
+        chatAvatarIndicator.style.backgroundImage = `url(${getAvatarImage(getHandle())})`;
+
+        chatChannelIndicator.onclick = promptChannel;
+
+        chatHandleIndicator.onclick = promptHandle;
+        chatAvatarIndicator.onclick = promptHandle;
+      }
+
+      function promptChannel () {
+        const newChannel = prompt('What channel do you want to join?');
+
+        if (newChannel) {
+          window.location.hash = newChannel;
+        }
+      }
+
+      function promptHandle () {
+        const newHandle = prompt('What should we call ya?');
+
+        if (newHandle) {
+          setHandle(newHandle);
+        }
+
+        refreshToolbar();
+      }
+
+      function countTextareaRows (textarea) {
+        // This is a bit of a hack that we have to do to figure out how
+        // big we should make the textarea when it gets new contents into it
+
+        // We first get the computed values to calculate padding & line-height
+        const computed = window.getComputedStyle(textarea);
+        const verticalPadding = parseInt(computed.paddingTop) + parseInt(computed.paddingBottom);
+        const lineHeight = parseInt(computed.lineHeight);
+        // Then set the height to 0 so we squash it down in case it's currently larget than it should be..
+        textarea.style.height = '0px';
+        // Then measure the contents divided by the line-height to get the number of rows
+        const rows = Math.floor((textarea.scrollHeight - verticalPadding) / lineHeight);
+        textarea.style.height = 'auto';
+        return rows;
+      }
+
+      function bindChatInput () {
+        const chatTextInputElement = document.getElementById('chat-input-text');
+
+        const sendMessage = async () => {
+          if (chatTextInputElement.value.length > 0) {
+            chatTextInputElement.readonly = true;
+            await putChannel(channel, getHandle(), chatTextInputElement.value);
+            chatTextInputElement.value = '';
+            chatTextInputElement.rows = countTextareaRows(chatTextInputElement);
+            chatTextInputElement.readonly = false;
+          }
+        };
+
+        chatTextInputElement.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (e.ctrlKey) {
+              chatTextInputElement.value += "\n";
+            } else {
+              sendMessage();
+            }
+          }
+          setTimeout(() => chatTextInputElement.rows = countTextareaRows(chatTextInputElement), 10);
+        };
+      }
+
+      function refreshChannel () {
+        const chatPaneElement = document.getElementById('chat-pane');
+
+        return getChannel(channel)
+            .then(body => {
+              chatPaneElement.appendChild(getMessageElement(body));
+              chatPaneElement.scrollTo({ top: chatPaneElement.scrollHeight });
+            });
+      }
+
+      function setChannelListenerWatchdog () {
+        if (this.timeout) {
+          clearTimeout(this.timeout);
+        }
+
+        if (source) {
+          // On messages, reset the watchdog.
+          for (const type of ["update", "message", "ping"]) {
+            source.removeEventListener(type, setChannelListenerWatchdog);
+            source.addEventListener(type, setChannelListenerWatchdog);
+          }
+        }
+
+        this.timeout = setTimeout(
+            () => {
+              if (!source || source.readyState !== 1) {
+                setChannelListener();
+              }
+
+              setChannelListenerWatchdog();
+            },
+            3000
+        );
+      }
+
+      function setChannelListener () {
+        if (source) {
+          source.close();
+        }
+
+        source = listenChannel(channel);
+
+        source.addEventListener("update", refreshChannel);
+
+        source.onopen = () => refreshToolbar();
+        source.onerror = () => refreshToolbar();
+
+        refreshToolbar();
+      }
+
+      window.onload = () => {
+        bindChatInput();
+        setChannelListener();
+        setChannelListenerWatchdog();
+
+        refreshToolbar();
+        refreshChannel();
+      };
+
+      window.onhashchange = () => window.location.reload();
+    </script>
+    <body>
+        <section id="chat-toolbar">
+            <div id="chat-connection-indicator"></div>
+            <div id="chat-channel-indicator"></div>
+            <div id="chat-handle-indicator"></div>
+            <div id="chat-avatar-indicator"></div>
+        </section>
+
+        <section id="chat-pane">
+            <aside>
+                <span>
+                    Only the last message is persisted
+                </span>
+            </aside>
+
+        </section>
+
+        <section id="chat-input">
+            <textarea id="chat-input-text" rows="1" autofocus="true" autocomplete="false" placeholder="Write a Message"></textarea>
+        </section>
+    </body>
+</html>
