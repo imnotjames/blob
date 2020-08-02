@@ -162,6 +162,7 @@ export class BlobRouteFactory implements RouteFactory {
     }
 
     response.set('ETAG', checksum);
+    response.set('Cache-Control', 'no-cache');
     response.set('Content-Type', mimeType);
 
     response.status = 200;
