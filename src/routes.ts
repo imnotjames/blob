@@ -131,7 +131,7 @@ export class BlobRouteFactory implements RouteFactory {
       return;
     }
 
-    if (!accept.types([blob.mimeType])) {
+    if (blob.mimeType && !accept.types([blob.mimeType])) {
       response.status = 406;
       return;
     }
@@ -179,13 +179,14 @@ export class BlobRouteFactory implements RouteFactory {
       return;
     }
 
+    const mimeType = headers['content-type'] || blob?.mimeType;
     const body = await getRawBody(req);
     const checksum = crypto.createHash('sha256').update(body).digest('hex');
 
     await this.repository.updateBlob(
       id,
       {
-        mimeType: headers['content-type'],
+        mimeType,
         checksum,
         blob: Readable.from(body)
       }
