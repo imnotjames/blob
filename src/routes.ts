@@ -20,28 +20,54 @@ export class BlobRouteFactory implements RouteFactory {
     this.repository = repository;
   }
 
-  private checkMatchingRules(headers: { [name: string]: string }, checksum: string, omissionIsMatch = true): boolean {
-    if ('if-match' in headers) {
-      const allowed = headers['if-match'];
+  /**
+   * @param pattern Pattern can be `"foo"`, `"foo", "bar"`, or `*`
+   * @param checksum The checksum we want to check against
+   * @private
+   */
+  private checkMatchingRule (pattern: string, checksum: string): boolean {
+    const patterns = pattern
+      .split(',')
+      .map(p => p.trim());
 
-      if (allowed === '*' && checksum == null) {
-        // Special case - "*" matches anything except "null"-ish (eg, nothing.)
-        // This means is CANNOT be null - if it is, that's a failure
-        return false;
-      } else if (allowed !== checksum) {
+    for (const p of patterns) {
+      if (p === '*') {
+        if (checksum != null) {
+          // Special case - "*" matches anything except "null"-ish (eg, nothing.)
+          // This means is CANNOT be null - if it is, that's a failure
+          return true;
+        }
+
+        continue;
+      }
+
+      if (p.match(/^(?:W\/)?"(.+)"$/)) {
+        if (p.replace(/^(?:W\/)?"(.+)"$/, '$1') === checksum) {
+          return true;
+        }
+
+        continue;
+      }
+
+      if (p === checksum) {
+        return true;
+      }
+    }
+  }
+
+  private checkMatchingRules (headers: { [name: string]: string }, checksum: string): boolean {
+    // If-match is a positive check.
+    // If it does match it's good.
+    if ('if-match' in headers) {
+      if (!this.checkMatchingRule(headers['if-match'], checksum)) {
         return false;
       }
     }
 
     // If-None-Match is effectively a negation.
+    // If it doesn't match it's good.
     if ('if-none-match' in headers) {
-      const disallowed = headers['if-none-match'];
-
-      if (disallowed === '*' && checksum != null) {
-        // Special case - "*" matches anything except "null"-ish (eg, nothing.)
-        // Because this is a negation, this means it MUST BE NULL.
-        return false;
-      } else if (disallowed === checksum) {
+      if (this.checkMatchingRule(headers['if-none-match'], checksum)) {
         return false;
       }
     }
@@ -136,7 +162,7 @@ export class BlobRouteFactory implements RouteFactory {
       return;
     }
 
-    if (!this.checkMatchingRules(headers, blob?.checksum, false)) {
+    if (!this.checkMatchingRules(headers, blob?.checksum)) {
       response.status = 304;
       return;
     }
