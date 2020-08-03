@@ -480,6 +480,10 @@
                     back with it.
                 </p>
 
+                <p>
+                    Updating the blob will emit an <code>update</code> event to any blob listener.
+                </p>
+
                 <label for="blob-update-mime">Update your Blob Content Type</label>
                 <input id="blob-update-mime" />
 
@@ -501,8 +505,8 @@
                 </p>
 
                 <p>
-                    Your blob will respond with the payload you sent to it, along with a number of headers
-                    describing information about it.
+                    Your blob will respond with the payload you sent to it, the <code>Content-Type</code>,
+                    along with a number of headers describing information about it.
                 </p>
             </section>
 
@@ -511,9 +515,18 @@
                     Delete a Blob
                 </h3>
 
-                <pre><code>curl <span id="example-delete-url">api.blob.fyi/blob/example</span></code></pre>
+                <pre><code>curl -X DELETE <span id="example-delete-url">api.blob.fyi/blob/example</span></code></pre>
 
                 <button id="blob-delete">&#128465;&nbsp;&nbsp;&nbsp;Delete Blob</button>
+
+                <p>
+                    Blob deletions take affect immediately.  To prevent deletions of data you don't expect
+                    to be deleting you can use <code>If-Match</code> or <code>If-None-Match</code> HTTP headers.
+                </p>
+
+                <p>
+                    Deleting the blob will emit an <code>delete</code> event to any blob listener.
+                </p>
             </section>
 
             <section id="example-listen">
