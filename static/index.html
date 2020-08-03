@@ -453,7 +453,7 @@
                     Create a Blob with a Random Name
                 </h3>
 
-                <pre><code>curl -X POST <span id="example-create-url">api.blob.fyi/blob</span> -d "Hello World"</code></pre>
+                <pre><code>curl -X POST <span id="example-create-url">blob.fyi/blob</span> -d "Hello World"</code></pre>
 
                 <button id="blob-create">&#128465;&nbsp;&nbsp;&nbsp;Create a new Blob</button>
 
@@ -471,7 +471,7 @@
                     Create or Update a Blob
                 </h3>
 
-                <pre><code>curl -X PUT <span id="example-put-url">api.blob.fyi/blob/example</span> -d "Hello!"</code></pre>
+                <pre><code>curl -X PUT <span id="example-put-url">blob.fyi/blob/example</span> -d "Hello!"</code></pre>
 
                 <p>
                     Now that you've got a name for your blob you can update it.  This can either be from the
@@ -499,7 +499,7 @@
                     Retrieve a Blob
                 </h3>
 
-                <pre><code>curl <span id="example-get-url">api.blob.fyi/blob/example</span></code></pre>
+                <pre><code>curl <span id="example-get-url">blob.fyi/blob/example</span></code></pre>
 
                 <pre id="blob-get"></pre>
 
@@ -518,7 +518,7 @@
                     Delete a Blob
                 </h3>
 
-                <pre><code>curl -X DELETE <span id="example-delete-url">api.blob.fyi/blob/example</span></code></pre>
+                <pre><code>curl -X DELETE <span id="example-delete-url">blob.fyi/blob/example</span></code></pre>
 
                 <button id="blob-delete">&#128465;&nbsp;&nbsp;&nbsp;Delete Blob</button>
 
@@ -537,7 +537,7 @@
                     Listen to Blob Updates
                 </h3>
 
-                <pre><code>curl <span id="example-listen-url">api.blob.fyi/blob/example/listen</span></code></pre>
+                <pre><code>curl <span id="example-listen-url">blob.fyi/blob/example/listen</span></code></pre>
 
                 <div id="blob-listen"></div>
 
@@ -570,8 +570,7 @@
                 </h3>
 
                 <p>
-                    The API is documented via OpenAPI 3.
-                    You can check
+                    The API is documented via OpenAPI 3.  You can check
                     <a href="https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/imnotjames/blob/master/reference/blob.v1.yaml">
                         out the full API reference via ReDoc
                     </a>.
