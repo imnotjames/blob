@@ -5,11 +5,11 @@
     <style>
         #bubbles {
             position: absolute;
-            height: 60px;
+            height: 100px;
             top: 100%;
             left: -5vw;
             right: -5vw;
-            margin-top: -45px;
+            margin-top: -95px;
 
             filter:url("#blob");
             background-color: white;
@@ -88,7 +88,7 @@
             background-color: #262626;
             clear: both;
 
-            min-height: 120px;
+            min-height: 220px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -104,17 +104,20 @@
             font-weight: bolder;
             text-transform: uppercase;
             font-size: 64px;
-            line-height: 64px;
+            line-height: 120px;
+            margin: 0;
             letter-spacing: 2px;
         }
 
         #github-link {
             z-index: 1;
+            position: absolute;
+            bottom: 0;
         }
 
         main {
             padding: 0 10px;
-            margin: 80px auto;
+            margin: 60px auto;
             max-width: 720px;
             width: 100%;
             box-sizing: border-box;
