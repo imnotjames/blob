@@ -7,7 +7,7 @@
   "main": "src/server.ts",
   "scripts": {
     "start": "node build/server.js",
-    "compile": "tsc --outDir ./build/",
+    "build": "tsc --outDir ./build/",
     "dev": "nodemon -w 'reference/**/*.yaml' -w 'src/**/*.ts' --exec node -- -r 'dotenv/config' --experimental-vm-modules --experimental-top-level-await --loader ts-node/esm.mjs src/server.ts",
     "lint": "eslint -c .eslintrc.json --ext .ts src/**/*.ts"
   },
