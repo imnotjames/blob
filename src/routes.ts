@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { Readable, PassThrough } from 'stream';
 
+import createHttpError from "http-errors";
 import { v4 as uuidv4 } from 'uuid';
 import getRawBody from 'raw-body';
 import { Context, Middleware } from 'koa';
@@ -156,13 +157,11 @@ export class BlobRouteFactory implements RouteFactory {
     const blob = await this.repository.getBlob(id);
 
     if (!blob) {
-      response.status = 404;
-      return;
+      throw new createHttpError.NotFound();
     }
 
     if (blob.mimeType && !accept.types([blob.mimeType])) {
-      response.status = 406;
-      return;
+      throw new createHttpError.NotAcceptable();
     }
 
     if (!this.checkMatchingRules(headers, blob?.checksum)) {
@@ -204,8 +203,7 @@ export class BlobRouteFactory implements RouteFactory {
     // TODO: Create a lock - This could cause a race condition
     //       between when the check happens and when the update occurs.
     if (!this.checkMatchingRules(headers, blob?.checksum)) {
-      response.status = 412;
-      return;
+      throw new createHttpError.PreconditionFailed();
     }
 
     const mimeType = headers['content-type'] || blob?.mimeType;
@@ -232,15 +230,13 @@ export class BlobRouteFactory implements RouteFactory {
     const blob = await this.repository.getBlob(id);
 
     if (!blob) {
-      response.status = 404;
-      return;
+      throw new createHttpError.NotFound();
     }
 
     // TODO: Create a lock - This could cause a race condition
     //       between when the check happens and when the delete occurs.
     if (!this.checkMatchingRules(headers, blob?.checksum)) {
-      response.status = 412;
-      return;
+      throw new createHttpError.PreconditionFailed();
     }
 
     await this.repository.deleteBlob(id);
