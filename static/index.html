@@ -210,7 +210,7 @@
         #blob-get #blob-get-headers header label, #blob-get #blob-get-headers header code {
             display: table-cell;
             margin: 0;
-            padding: 0.75em 0;
+            padding: 0.75em 0.25em;
         }
 
         #blob-get-contents {
@@ -304,7 +304,7 @@
 
                   for (const header of r.headers.entries()) {
                     // Ignore Cloudflare headers
-                    if (header[0].startsWith('cf-') || header === 'server' || header === 'via') {
+                    if (header[0].startsWith('cf-') || ['server', 'via', 'expect-ct'].includes(header[0])) {
                       continue;
                     }
 
