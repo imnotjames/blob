@@ -203,12 +203,14 @@
             gap: 10px;
         }
 
-        #blob-get #blob-get-headers header h4, #blob-get #blob-get-headers header code {
+        #blob-get #blob-get-headers header label {
+            white-space: nowrap;
+        }
+
+        #blob-get #blob-get-headers header label, #blob-get #blob-get-headers header code {
             display: table-cell;
             margin: 0;
-            padding: 0.25em 0;
-            font-size: 12px;
-            line-height: 12px;
+            padding: 0.75em 0;
         }
 
         #blob-get-contents {
@@ -301,9 +303,16 @@
                   blobHeaderElement.innerHTML = '';
 
                   for (const header of r.headers.entries()) {
+                    // Ignore Cloudflare headers
+                    if (header[0].startsWith('cf-') || header === 'server' || header === 'via') {
+                      continue;
+                    }
+
                     const headerElement = document.createElement('header');
-                    const keyElement = document.createElement('h4');
+                    const keyElement = document.createElement('label');
                     const valueElement = document.createElement('code');
+
+                    keyElement.htmlFor = valueElement.id = 'blob-get-headers-' + header[0];
 
                     keyElement.innerText = header[0];
                     valueElement.innerText = header[1];
