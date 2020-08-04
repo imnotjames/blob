@@ -6,13 +6,17 @@
   "type": "module",
   "main": "src/server.ts",
   "scripts": {
-    "start": "node build/server.js",
+    "start": "node --experimental-vm-modules --experimental-top-level-await build/server.js",
     "build": "tsc --outDir ./build/",
     "dev": "nodemon -w 'reference/**/*.yaml' -w 'src/**/*.ts' --exec node -- -r 'dotenv/config' --experimental-vm-modules --experimental-top-level-await --loader ts-node/esm.mjs src/server.ts",
     "lint": "eslint -c .eslintrc.json --ext .ts src/**/*.ts"
   },
   "author": "James Ward <james@notjam.es>",
   "license": "MIT",
+  "engines" : {
+    "node" : ">=13"
+  },
+  "engineStrict": true,
   "dependencies": {
     "@imnotjames/koa-openapi-router": "0.0.1",
     "@koa/cors": "^3.1.0",
