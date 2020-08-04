@@ -72,7 +72,7 @@ export async function getApp (): Promise<Koa> {
   app.use(logger());
   app.use(cors({ exposeHeaders: ['Location', 'Link', 'ETAG'] }));
 
-  app.use(serve('./static'));
+  app.use(serve('./static', { maxAge: 300 }));
 
   app
     .use(router.routes())
