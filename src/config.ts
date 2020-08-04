@@ -16,6 +16,7 @@ export default {
   },
   blob: {
     source: env.get('BLOB_SOURCE').default('memory').asEnum(['redis', 'memory']),
+    maxSize: env.get('BLOB_MAX_SIZE').default(Infinity).asFloatPositive(),
     maxAge: env.get('BLOB_MAX_AGE').default(Infinity).asFloatPositive()
   }
 };

@@ -56,7 +56,7 @@ async function getContainer (): Promise<tsyringe.DependencyContainer> {
     container.register<BlobRepository>('BlobRepository', { useToken: RedisBlobRepository });
   }
 
-  container.register<RouteFactory>(BlobRouteFactory, { useFactory: c => new BlobRouteFactory(c.resolve<BlobRepository>('BlobRepository')) });
+  container.register<RouteFactory>(BlobRouteFactory, { useFactory: c => new BlobRouteFactory(c.resolve<BlobRepository>('BlobRepository'), config.blob.maxSize) });
 
   container.register<RouteFactory>('RouteFactory', { useToken: BlobRouteFactory });
   container.register<Router>(Router, { useFactory: c => new Router(c.resolve('APIDoc'), c.resolve('RouteFactory')) });

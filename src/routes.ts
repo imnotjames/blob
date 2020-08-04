@@ -16,8 +16,11 @@ export interface RouteFactory {
 export class BlobRouteFactory implements RouteFactory {
   private repository: BlobRepository;
 
-  constructor (repository: BlobRepository) {
+  private maxBlobSize: number;
+
+  constructor (repository: BlobRepository, maxBlobSize: number = Infinity) {
     this.repository = repository;
+    this.maxBlobSize = maxBlobSize;
   }
 
   /**
@@ -78,15 +81,15 @@ export class BlobRouteFactory implements RouteFactory {
 
   private async createBlob ({ req, request: { headers }, response, router }: Context) {
     const id = uuidv4();
-    const blob = await getRawBody(req);
-    const checksum = crypto.createHash('sha256').update(blob).digest('hex');
+    const body = await getRawBody(req, {limit: this.maxBlobSize});
+    const checksum = crypto.createHash('sha256').update(body).digest('hex');
 
     await this.repository.updateBlob(
       id,
       {
         mimeType: headers['content-type'],
         checksum,
-        blob: Readable.from(blob)
+        blob: Readable.from(body)
       }
     );
 
@@ -206,7 +209,7 @@ export class BlobRouteFactory implements RouteFactory {
     }
 
     const mimeType = headers['content-type'] || blob?.mimeType;
-    const body = await getRawBody(req);
+    const body = await getRawBody(req, { limit: this.maxBlobSize });
     const checksum = crypto.createHash('sha256').update(body).digest('hex');
 
     await this.repository.updateBlob(
