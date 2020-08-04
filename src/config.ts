@@ -1,7 +1,11 @@
 import env from 'env-var';
 
 export default {
-  port: env.get('PORT').default(8080).asIntPositive(),
+  http: {
+    port: env.get('PORT').default(8080).asPortNumber(),
+    key: env.get('TLS_KEY').asString(),
+    cert: env.get('TLS_CERT').asString()
+  },
   storage: {
     redis: {
       url: env.get('REDIS_URL').default('redis://127.0.0.1:6379/0').asUrlString()
