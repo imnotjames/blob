@@ -2,6 +2,7 @@
 <html>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;800&display=swap" rel="stylesheet">
+    <title>Chat</title>
     <style>
         html, body {
             width: 100%;
@@ -170,6 +171,8 @@
     <script type="text/javascript">
       let source;
       const channel = decodeURIComponent(window.location.hash.slice(1));
+
+      document.title = '#' + channel;
 
       const BASE_URL = new URL(window.location.origin);
 
