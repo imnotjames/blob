@@ -84,7 +84,7 @@
             flex-direction: column;
         }
 
-        header {
+        body > header {
             background-color: #262626;
             clear: both;
 
@@ -100,7 +100,7 @@
             border: 0;
         }
 
-        header h1 {
+        body > header h1 {
             font-weight: bolder;
             text-transform: uppercase;
             font-size: 64px;
@@ -123,7 +123,7 @@
             box-sizing: border-box;
         }
 
-        main section {
+        main > section {
             margin-bottom: 4em;
         }
 
@@ -145,7 +145,8 @@
             overflow-x: auto;
             border-radius: 4px;
             padding: 12px 18px;
-            background-color: #EAEAEA;
+            background-color: #777;
+            color: white;
             display: block;
         }
 
@@ -159,10 +160,11 @@
         }
 
         #blob-listen {
+            border: 4px solid #777;
+            border-radius: 4px;
             min-height: 1em;
             overflow-y: auto;
-            border-left: 4px solid #999;
-            padding-left: 4px;
+            padding: 1em 4px;
         }
 
         button, a[role=button] {
@@ -182,13 +184,40 @@
         }
 
         #blob-get {
-            border-left: 4px solid #999;
-            padding: 12px 8px;
+            border: 4px solid #777;
+            border-radius: 4px;
+        }
+
+        #blob-get #blob-get-headers {
+            background-color: #777;
+            color: white;
+            padding: 0.25em 1em;
+            display: table;
+            width: 100%;
+            box-sizing: border-box;
+            border-top: 4px solid #777;
+        }
+
+        #blob-get #blob-get-headers header {
+            display: table-row;
+            gap: 10px;
+        }
+
+        #blob-get #blob-get-headers header h4, #blob-get #blob-get-headers header code {
+            display: table-cell;
+            margin: 0;
+            padding: 0.25em 0;
+            font-size: 12px;
+            line-height: 12px;
+        }
+
+        #blob-get-contents {
+            padding: 8px 8px;
             overflow-x: auto;
             margin: 1em 0;
         }
 
-        #blob-get img {
+        #blob-get-contents img {
             max-width: 128px;
             max-height: 128px;
         }
@@ -210,8 +239,7 @@
 
       function getBlob (id) {
         const url = new URL(`/blob/${encodeURIComponent(id)}`, BASE_URL);
-        return fetch(url)
-            .then(r => r.blob());
+        return fetch(url);
       }
 
       function deleteBlob (id) {
@@ -261,12 +289,33 @@
 
 
       function refreshBlob (id) {
-        const blobElement = document.getElementById('blob-get');
+        const blobHeaderElement  = document.getElementById('blob-get-headers');
+        const blobElement = document.getElementById('blob-get-contents');
 
         const typeElement = document.getElementById('blob-update-mime');
         const contentsElement = document.getElementById('blob-update-contents');
 
         return getBlob(id)
+            .then(
+                r => {
+                  blobHeaderElement.innerHTML = '';
+
+                  for (const header of r.headers.entries()) {
+                    const headerElement = document.createElement('header');
+                    const keyElement = document.createElement('h4');
+                    const valueElement = document.createElement('code');
+
+                    keyElement.innerText = header[0];
+                    valueElement.innerText = header[1];
+
+                    headerElement.appendChild(keyElement);
+                    headerElement.appendChild(valueElement);
+                    blobHeaderElement.appendChild(headerElement);
+                  }
+
+                  return r.blob();
+                }
+            )
             .then(
                 blob => {
                   if (document.activeElement !== typeElement) {
@@ -501,7 +550,10 @@
 
                 <pre><code>curl <span id="example-get-url">blob.fyi/blob/example</span></code></pre>
 
-                <pre id="blob-get"></pre>
+                <section id="blob-get">
+                    <pre id="blob-get-contents"></pre>
+                    <section id="blob-get-headers"></section>
+                </section>
 
                 <p>
                     Your blob request accepts many headers to change the behavior of the blob retrieval.
@@ -539,7 +591,7 @@
 
                 <pre><code>curl <span id="example-listen-url">blob.fyi/blob/example/listen</span></code></pre>
 
-                <div id="blob-listen"></div>
+                <section id="blob-listen"></section>
 
                 <p>
                     Blob Updates may be listened to by using
