@@ -6,7 +6,6 @@ import { Redis } from 'ioredis';
 import Redlock, { Lock } from 'redlock';
 import { EventEmitter } from 'events';
 
-
 export interface BlobInput {
   mimeType: string;
 
@@ -57,7 +56,7 @@ export class MemoryBlobRepository extends EventEmitter implements BlobRepository
     return {
       mimeType: blob.mimeType,
       updatedAt: blob.updatedAt,
-      expiresAt: this.store.maxAge === Infinity ? undefined: Math.floor(blob.updatedAt + this.store.maxAge),
+      expiresAt: this.store.maxAge === Infinity ? undefined : Math.floor(blob.updatedAt + this.store.maxAge),
       checksum: blob.checksum,
       blob: Readable.from(blob.blob)
     };
@@ -84,7 +83,7 @@ export class RedisBlobRepository extends EventEmitter implements BlobRepository 
   private readonly maxAge: number;
   private readonly lock: Redlock;
 
-  constructor (client: Redis, maxAge: number = Infinity) {
+  constructor (client: Redis, maxAge = Infinity) {
     super();
 
     this.client = client;
@@ -126,7 +125,7 @@ export class RedisBlobRepository extends EventEmitter implements BlobRepository 
     return {
       mimeType: metadata?.mimeType,
       updatedAt: metadata.updatedAt,
-      expiresAt: this.maxAge === Infinity ? undefined: Math.floor(metadata.updatedAt + this.maxAge),
+      expiresAt: this.maxAge === Infinity ? undefined : Math.floor(metadata.updatedAt + this.maxAge),
       checksum: metadata?.checksum,
       blob: Readable.from(buffer)
     };

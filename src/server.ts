@@ -21,7 +21,7 @@ function getServer (): http.Server|http2.Http2Server {
 }
 
 try {
-  const app = await getApp()
+  const app = await getApp();
 
   const server = getServer();
 

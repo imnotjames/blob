@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { Readable, PassThrough } from 'stream';
 
-import createHttpError from "http-errors";
+import createHttpError from 'http-errors';
 import { v4 as uuidv4 } from 'uuid';
 import getRawBody from 'raw-body';
 import { Context, Middleware } from 'koa';
@@ -19,7 +19,7 @@ export class BlobRouteFactory implements RouteFactory {
 
   private maxBlobSize: number;
 
-  constructor (repository: BlobRepository, maxBlobSize: number = Infinity) {
+  constructor (repository: BlobRepository, maxBlobSize = Infinity) {
     this.repository = repository;
     this.maxBlobSize = maxBlobSize;
   }
@@ -82,7 +82,7 @@ export class BlobRouteFactory implements RouteFactory {
 
   private async createBlob ({ req, request: { headers }, response, router }: Context) {
     const id = uuidv4();
-    const body = await getRawBody(req, {limit: this.maxBlobSize});
+    const body = await getRawBody(req, { limit: this.maxBlobSize });
     const checksum = crypto.createHash('sha256').update(body).digest('hex');
 
     await this.repository.updateBlob(
@@ -101,13 +101,13 @@ export class BlobRouteFactory implements RouteFactory {
     response.set('Location', router.url('get-blob', { blob_id: id }));
   }
 
-  private async listenBlob({ req, res, params: { blob_id: id }, response }: Context) {
+  private async listenBlob ({ req, res, params: { blob_id: id }, response }: Context) {
     response.set('Connection', 'keep-alive');
     response.set('Cache-Control', 'no-cache');
     response.type = 'text/event-stream';
     response.body = new PassThrough();
 
-    const send = (id: string, type: string, message: string = '') => {
+    const send = (id: string, type: string, message = '') => {
       response.body.write(`id: ${id}\n`);
 
       response.body.write(`event: ${type}\n`);
@@ -137,11 +137,10 @@ export class BlobRouteFactory implements RouteFactory {
       }
     };
 
-    this.repository.on(`update`, onUpdate);
-    this.repository.on(`delete`, onDelete);
+    this.repository.on('update', onUpdate);
+    this.repository.on('delete', onDelete);
 
     const end = () => {
-      console.log("Client disconnected");
       response.body.end();
 
       this.repository.off('update', onUpdate);
