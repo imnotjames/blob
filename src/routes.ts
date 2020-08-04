@@ -93,7 +93,7 @@ export class BlobRouteFactory implements RouteFactory {
     response.body = null;
     response.status = 201;
     response.set('Content-Length', '0');
-    response.set('ETAG', checksum);
+    response.set('ETAG', `"${checksum}"`);
     response.set('Location', router.url('get-blob', { blob_id: id }));
   }
 
@@ -187,7 +187,7 @@ export class BlobRouteFactory implements RouteFactory {
       // Do nothing
     }
 
-    response.set('ETAG', checksum);
+    response.set('ETAG', `"${checksum}"`);
     response.set('Cache-Control', 'no-cache');
     response.set('Content-Type', mimeType);
 
@@ -221,7 +221,7 @@ export class BlobRouteFactory implements RouteFactory {
     response.body = null;
     response.status = 201;
     response.set('Content-Length', '0');
-    response.set('ETAG', checksum);
+    response.set('ETAG', `"${checksum}"`);
     response.set('Location', router.url('get-blob', { blob_id: id }));
   }
 
