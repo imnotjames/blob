@@ -41,6 +41,9 @@ export class MemoryBlobRepository extends EventEmitter implements BlobRepository
   constructor ({ max = Infinity, maxAge = Infinity } = {}) {
     super();
 
+    // Max Age comes in as seconds and we want milliseconds
+    maxAge *= 1000;
+
     this.store = new LRU({ max, maxAge });
   }
 
@@ -85,7 +88,8 @@ export class RedisBlobRepository extends EventEmitter implements BlobRepository 
     super();
 
     this.client = client;
-    this.maxAge = maxAge;
+    // Max Age comes in as seconds and we expect milliseconds
+    this.maxAge = maxAge * 1000;
     this.lock = new Redlock([client]);
   }
 
