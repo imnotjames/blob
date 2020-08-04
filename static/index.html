@@ -303,9 +303,16 @@
                 r => {
                   blobHeaderElement.innerHTML = '';
 
+                  const visibleHeaders = [
+                      'cache-control',
+                      'content-type',
+                      'last-modified',
+                      'expires',
+                      'etag'
+                  ];
+
                   for (const header of r.headers.entries()) {
-                    // Ignore Cloudflare headers
-                    if (header[0].startsWith('cf-') || ['server', 'via', 'expect-ct'].includes(header[0])) {
+                    if (!visibleHeaders.includes(header[0])) {
                       continue;
                     }
 
