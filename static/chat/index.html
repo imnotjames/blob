@@ -327,13 +327,15 @@
       function bindChatInput () {
         const chatTextInputElement = document.getElementById('chat-input-text');
 
-        const sendMessage = async () => {
+        const sendMessage = () => {
           if (chatTextInputElement.value.length > 0) {
             chatTextInputElement.readonly = true;
-            await putChannel(channel, getHandle(), chatTextInputElement.value);
-            chatTextInputElement.value = '';
-            chatTextInputElement.rows = countTextareaRows(chatTextInputElement);
-            chatTextInputElement.readonly = false;
+            putChannel(channel, getHandle(), chatTextInputElement.value)
+                .then(() => {
+                  chatTextInputElement.value = '';
+                  chatTextInputElement.rows = countTextareaRows(chatTextInputElement);
+                  chatTextInputElement.readonly = false;
+                });
           }
         };
 
