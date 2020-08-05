@@ -205,33 +205,34 @@
         return handle;
       }
 
+      /**
+       * Gets the channel from the blob server.
+       */
       function getChannel (channel) {
         const channelUrl = new URL(`/blob/${encodeURIComponent(channel)}`, BASE_URL);
-        return fetch(
-            channelUrl,
-            {
-              mode: 'cors'
-            }
-        ).then(r => r.json());
+        return fetch(channelUrl, { mode: 'cors' }).then(r => r.json()).catch(e => ({}));
       }
 
+      /**
+       * Submits a new message to the channel.
+       */
       function putChannel (channel, handle, text) {
         const channelUrl = new URL(`/blob/${encodeURIComponent(channel)}`, BASE_URL);
-        return fetch(
-            channelUrl,
-            {
-              mode: 'cors',
-              method: 'PUT',
-              body: JSON.stringify({timestamp: Date.now(), handle, text})
-            }
-        );
+        const body = JSON.stringify({timestamp: Date.now(), handle, text});
+        return fetch(channelUrl, { mode: 'cors', method: 'PUT', body });
       }
 
+      /**
+       * Open an EventSource to the channel we want to listne to.
+       */
       function listenChannel (channel) {
         const chatEventSourceUrl = new URL(`/blob/${encodeURIComponent(channel)}/listen`, BASE_URL);
         return new EventSource(chatEventSourceUrl);
       }
 
+      /**
+       * Helper that returns a URL to a specific handle's avatar.
+       */
       function getAvatarImage (handle) {
         return `https://api.adorable.io/avatars/285/${encodeURIComponent(handle)}.png`;
       }
@@ -241,7 +242,7 @@
             .toLocaleTimeString('en-US',  { hour: 'numeric',  hour12: true,  minute: 'numeric' });
       }
 
-      function getMessageElement ({ timestamp, handle, text }) {
+      function createMessageElement ({ timestamp, handle, text }) {
         const article = document.createElement('article');
         const header = document.createElement('header');
         const avatar = document.createElement('div');
@@ -263,9 +264,14 @@
         article.appendChild(header);
         article.appendChild(content);
         article.appendChild(document.createElement('hr'));
+
         return article;
       }
 
+      /**
+       * Updates the toolbar to match the status of the listener source
+       * as well as the current channel & handle.
+       */
       function refreshToolbar () {
         const chatChannelIndicator = document.getElementById('chat-channel-indicator');
         const chatConnectionIndicator = document.getElementById('chat-connection-indicator');
@@ -290,6 +296,9 @@
         chatAvatarIndicator.onclick = promptHandle;
       }
 
+      /**
+       * Ask a user for a new channel then sets it.
+       */
       function promptChannel () {
         const newChannel = prompt('What channel do you want to join?');
 
@@ -298,6 +307,9 @@
         }
       }
 
+      /**
+       * Ask a user for a new handle then sets it.
+       */
       function promptHandle () {
         const newHandle = prompt('What should we call ya?');
 
@@ -308,10 +320,13 @@
         refreshToolbar();
       }
 
+      /**
+       * Counts the number of rows of text that are within a specific textarea.
+       *
+       * This is a bit of a hack that we have to do to figure out how
+       * big we should make the textarea when it gets new contents into it
+       */
       function countTextareaRows (textarea) {
-        // This is a bit of a hack that we have to do to figure out how
-        // big we should make the textarea when it gets new contents into it
-
         // We first get the computed values to calculate padding & line-height
         const computed = window.getComputedStyle(textarea);
         const verticalPadding = parseInt(computed.paddingTop) + parseInt(computed.paddingBottom);
@@ -324,6 +339,10 @@
         return rows;
       }
 
+      /**
+       * Sets up the chat input to accept text & binds DOM events to act within the
+       * chat application.
+       */
       function bindChatInput () {
         const chatTextInputElement = document.getElementById('chat-input-text');
 
@@ -352,16 +371,24 @@
         };
       }
 
+      /**
+       * Reads data from a channel and publishes it as a new message.
+       */
       function refreshChannel () {
         const chatPaneElement = document.getElementById('chat-pane');
 
         return getChannel(channel)
             .then(body => {
-              chatPaneElement.appendChild(getMessageElement(body));
+              chatPaneElement.appendChild(createMessageElement(body));
               chatPaneElement.scrollTo({ top: chatPaneElement.scrollHeight });
             });
       }
 
+      /**
+       * Turns out that EventSource isn't so reliable when reconnecting
+       * in some browsers.  As such, let's set up a watchdog that will
+       * reconnect it in the case that it fails to naturally.
+       */
       function setChannelListenerWatchdog () {
         if (this.timeout) {
           clearTimeout(this.timeout);
@@ -389,6 +416,7 @@
 
       function setChannelListener () {
         if (source) {
+          // Don't forget to close out the old listener if we're creating a new one.
           source.close();
         }
 
