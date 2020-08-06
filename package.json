@@ -9,7 +9,8 @@
     "start": "node --experimental-vm-modules --experimental-top-level-await build/server.js",
     "build": "tsc --outDir ./build/",
     "dev": "nodemon -w 'reference/**/*.yaml' -w 'src/**/*.ts' --exec node -- -r 'dotenv/config' --experimental-vm-modules --experimental-top-level-await --loader ts-node/esm.mjs src/server.ts",
-    "lint": "eslint -c .eslintrc.json --ext .ts src/**/*.ts"
+    "lint": "eslint -c .eslintrc.json --ext .ts src/**/*.ts",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "author": "James Ward <james@notjam.es>",
   "license": "MIT",
@@ -42,6 +43,7 @@
   "devDependencies": {
     "@types/http-errors": "^1.8.0",
     "@types/ioredis": "^4.17.2",
+    "@types/jest": "^26.0.9",
     "@types/koa-bodyparser": "^4.3.0",
     "@types/koa-logger": "^3.1.1",
     "@types/koa-static": "^4.0.1",
@@ -62,9 +64,14 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "jest": "^26.1.0",
+    "jest": "^26.2.2",
     "nodemon": "^2.0.4",
+    "ts-jest": "^26.1.4",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.7"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "jest-environment-node"
   }
 }
