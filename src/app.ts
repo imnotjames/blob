@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import tsyringe from 'tsyringe';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';

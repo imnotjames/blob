@@ -6,9 +6,9 @@
   "type": "module",
   "main": "src/server.ts",
   "scripts": {
-    "start": "node --experimental-vm-modules --experimental-top-level-await build/server.js",
+    "start": "node --experimental-vm-modules --experimental-top-level-await -r 'dotenv/config' -r 'reflect-metadata' build/server.js",
     "build": "tsc --outDir ./build/",
-    "dev": "nodemon -w 'reference/**/*.yaml' -w 'src/**/*.ts' --exec node -- -r 'dotenv/config' --experimental-vm-modules --experimental-top-level-await --loader ts-node/esm.mjs src/server.ts",
+    "dev": "nodemon -w 'reference/**/*.yaml' -w 'src/**/*.ts' --exec node -- -r 'dotenv/config' --experimental-vm-modules --experimental-top-level-await -r 'dotenv/config' -r 'reflect-metadata' --loader ts-node/esm.mjs src/server.ts",
     "lint": "eslint -c .eslintrc.json --ext .ts src/**/*.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
