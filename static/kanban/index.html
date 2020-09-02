@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <title>Kanban Board</title>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            font-family: 'Open Sans', sans-serif;
+            color: #262626;
+        }
+
+        #root {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+    </style>
+
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <script type="text/babel">
+        const BoardContext = React.createContext();
+
+        function useBoard () {
+          return React.useContext(BoardContext);
+        }
+
+        const BoardProvider = ({ id, children }) => {
+          const [etag, setEtag] = React.useState();
+          const [isLoading, setIsLoading] = React.useState(true);
+          const [error, setError] = React.useState('Not Found');
+          const boardRef = React.useRef({
+            title: 'Board',
+            lanes: []
+          });
+
+          const patchBoard = React.useCallback(
+              async (patcher) => {
+                if (!etag || !id) {
+                  throw new Error('update not ready');
+                }
+
+                setIsLoading(true);
+
+                while (true) {
+                  const patch = await patcher(JSON.parse(JSON.stringify(boardRef.current)));
+
+                  if (!patch) {
+                    // If nothing is returned back we don't do an update.
+                    break;
+                  }
+
+                  const response = await fetch(
+                      `/blob/${id}`,
+                      {
+                        method: 'PUT',
+                        headers: {
+                          'If-Match': etag,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          ...boardRef.current,
+                          ...patch,
+                          isBoard: true,
+                        })
+                      }
+                  );
+
+                  if (response.ok) {
+                    // Set the response etag
+                    boardRef.current = {
+                      ...boardRef.current,
+                      ...patch
+                    };
+                    setEtag(response.headers.get('ETAG'));
+
+                    setIsLoading(false);
+                    break;
+                  }
+
+                  await new Promise((resolve) => setTimeout(resolve, 500));
+                }
+              },
+              [id, etag]
+          );
+
+          const createLane = React.useCallback(
+              async (title = '') => {
+                const id = createId();
+
+                await patchBoard(() => {
+                  const lanes = [...boardRef.current.lanes];
+                  lanes.push({id, title, cards: []});
+                  return {lanes};
+                });
+              },
+              [patchBoard]
+          );
+
+          const createCard = React.useCallback(
+              async (laneId, title = '') => {
+                const id = createId();
+                await patchBoard(board => {
+                  if (!board.lanes) {
+                    return;
+                  }
+
+                  const lane = board.lanes.find(l => l.id === laneId);
+
+                  if (lane) {
+                    lane.cards = [
+                      ...(lane.cards || []),
+                      { id, title }
+                    ];
+                  }
+
+                  return board;
+                });
+              },
+              [patchBoard]
+          );
+
+          const updateCard = React.useCallback(
+              async (cardId, patch) => {
+                await patchBoard(board => {
+                  for (const lane of board.lanes) {
+                    for (const card of board.cards) {
+                      if (card.id === cardId) {
+                        break;
+                      }
+                    }
+                  }
+                });
+              },
+              [patchBoard]
+          )
+
+          const reloadBoard = React.useCallback(
+              async () => {
+                if (!id) {
+                  setError('Not Found');
+                  return;
+                }
+
+                const response = await fetch(
+                    `/blob/${encodeURIComponent(id)}`,
+                    {headers: {'If-Not-Match': etag}}
+                );
+
+                if (!response.ok) {
+                  setError(response.statusText);
+                  return;
+                }
+
+                try {
+                  const {
+                    isBoard = false,
+                    ...boardValues
+                  } = await response.json();
+
+                  // This flag prevents us from loading up the wrong kind of JSON blobs
+                  if (isBoard) {
+                    boardRef.current = {
+                      ...boardRef.current,
+                      ...boardValues
+                    };
+                    setError(undefined);
+                    setEtag(response.headers.get('ETAG'));
+                  } else {
+                    boardRef.current = {};
+                    setError("Not Board");
+                    setEtag(undefined);
+                  }
+                } catch (e) {
+
+                }
+              },
+              [id, etag]
+          );
+
+          React.useEffect(
+              () => {
+                reloadBoard();
+
+                if (id) {
+                  const source = new EventSource(`/blob/${encodeURIComponent(id)}/listen`);
+
+                  source.addEventListener('update', reloadBoard);
+                  source.addEventListener('delete', reloadBoard);
+
+                  return () => source.close();
+                }
+              },
+              [id, reloadBoard]
+          );
+
+          return (
+              <BoardContext.Provider value={{
+                reloadBoard,
+                createLane,
+                createCard,
+                updateCard,
+                isLoading,
+                error,
+                ...boardRef.current
+              }}>
+                {children}
+              </BoardContext.Provider>
+          );
+        };
+
+        function createId () {
+          return Math.random().toString(36).substring(2);
+        }
+
+        async function createBoard () {
+          const background = '#' + Math.floor(Math.random()*16777215).toString(16);
+
+          return await fetch(
+              `/blob/`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ isBoard: true, background  })
+              }
+          );
+        }
+
+        const LANE_WIDTH = '272px';
+
+        const BoardNotFound = () => {
+            const [error, setError] = React.useState();
+            const [pending, setIsPending] = React.useState(false);
+
+            const onClickCallback = React.useCallback(
+                () => {
+                  (async () => {
+                    setIsPending(true);
+
+                    const response = await createBoard();
+
+                    if (response.ok) {
+                      const resourceUrl = response.headers.get('Location');
+
+                      const id = resourceUrl.substring(6);
+
+                      window.location.hash = `#${id}`;
+                      window.location.reload();
+                    } else {
+                      setError(response.statusText);
+                    }
+
+                    setIsPending(false);
+                  })();
+                },
+                []
+            );
+
+            return (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '20px',
+                  height: '100%'
+                }}>
+                  No Board Here
+
+                  <button
+                      onClick={onClickCallback}
+                      disabled={pending}
+                      style={{
+                        fontSize: '18px',
+                        background: 'transparent',
+                        border: '1px solid #CACACA',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}
+                  >
+                    &#65291;
+                    Create a Board
+                  </button>
+
+                  {error ? <div>{error}</div> : ''}
+                </div>
+            )
+        };
+
+        const Card = ({ title }) => {
+          return (
+              <div style={{
+                backgroundColor: '#FFF',
+                boxShadow: '2px 2px 3px -2px black',
+                padding: '4px',
+                border: '1px solid #CACACA',
+                borderRadius: '4px'
+              }}>
+                {title}
+              </div>
+          )
+        };
+
+        const CreateCard = ({ lane }) => {
+          const [active, setActive] = React.useState(false);
+          const [title, setTitle] = React.useState('');
+
+          const {createCard} = useBoard();
+
+          const onChangeValueCallback = React.useCallback(({target: {value}}) => setTitle(value), [setTitle]);
+
+          const onOpenCardCallback = React.useCallback(() => setActive(true), [setActive]);
+
+          const onCloseCardCallback = React.useCallback(() => setActive(false), [setActive]);
+
+          const createCardCallback = React.useCallback(
+              async () => {
+                await createCard(lane, title);
+                setTitle('');
+                setActive(false);
+              },
+              [createCard, lane, title]
+          )
+
+          if (active) {
+            return <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+              <textarea
+                    onChange={onChangeValueCallback}
+                    value={title}
+                    autoFocus={true}
+                    placeholder="Enter a title for this Card..."
+                    style={{
+                      resize: 'vertical',
+                      fontSize: '16px',
+                      border: '1px solid #AAA',
+                      borderRadius: '4px',
+                      padding: '6px 8px',
+                      fontFamily: '\'Open Sans\', sans-serif',
+                      fontWeight: '400',
+                    }} />
+              <div>
+                <button onClick={createCardCallback}>
+                  Add Card
+                </button>
+                <button onClick={onCloseCardCallback} style={{
+                  fontFamily: 'monospace',
+                  fontSize: '16px',
+                  lineHeight: '16px',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  borderStyle: 'none'
+                }}>
+                  &#x2A09;
+                </button>
+              </div>
+            </div>
+          }
+
+          return (
+              <button
+                  onClick={onOpenCardCallback}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: '1px solid transparent',
+                    padding: '8px 8px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}>
+                &#65291;
+                Add Another Card
+              </button>
+          );
+        };
+
+        const Lane = ({ id, title, cards = [] }) => {
+          return (
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                width: LANE_WIDTH,
+                maxWidth: LANE_WIDTH
+              }}>
+                <div style={{
+                  border: '1px solid #CACACA',
+                  backgroundColor: '#FAFAFA',
+                  borderRadius: '4px'
+                }}>
+                    <button style={{float: 'right'}}>…</button>
+                    <div style={{
+                      fontWeight: '600',
+                      padding: '4px 12px 0px'
+                    }}>
+                      {title}
+                    </div>
+
+                    <div style={{
+                      overflowY: 'auto',
+                      gap: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      padding: '8px 4px',
+                      clear: 'both'
+                    }}>
+                        {cards.map(card => <Card key={card.id} {...card} />)}
+
+                        <CreateCard lane={id} />
+                    </div>
+                </div>
+              </div>
+          )
+        }
+
+        const CreateLane = () => {
+          const [active, setActive] = React.useState(false);
+          const [title, setTitle] = React.useState('');
+
+          const {createLane} = useBoard();
+
+          const onChangeValueCallback = React.useCallback(({target: {value}}) => setTitle(value), [setTitle]);
+
+          const onOpenLaneCallback = React.useCallback(() => setActive(true), [setActive]);
+
+          const onCloseLaneCallback = React.useCallback(() => setActive(false), [setActive]);
+
+          const createLaneCallback = React.useCallback(
+              async () => {
+                try {
+                  await createLane(title);
+                  setTitle('');
+                  setActive(false);
+                } catch (e) {
+                }
+              },
+              [createLane, title]
+          );
+
+          if (active) {
+            return (
+                <div style={{
+                  width: LANE_WIDTH,
+                }}>
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 1)',
+                    padding: '4px',
+                    display: 'flex',
+                    borderRadius: '4px',
+                    gap: '8px',
+                    flexDirection: 'column'
+                  }}>
+                      <input
+                          type="text"
+                          autoFocus={true}
+                          value={title}
+                          placeholder="Enter lane title..."
+                          autoComplete="off"
+                          maxLength="512"
+                          style={{
+                            fontSize: '16px',
+                            border: '1px solid #AAA',
+                            borderRadius: '4px',
+                            padding: '6px 8px',
+                            fontFamily: '\'Open Sans\', sans-serif',
+                            fontWeight: '400',
+                          }}
+                          onChange={onChangeValueCallback}
+                      />
+                      <div>
+                        <button onClick={createLaneCallback}>
+                          Add Lane
+                        </button>
+                        <button onClick={onCloseLaneCallback} style={{
+                          fontFamily: 'monospace',
+                          fontSize: '16px',
+                          lineHeight: '16px',
+                          cursor: 'pointer',
+                          background: 'transparent',
+                          borderStyle: 'none'
+                        }}>
+                          &#x2A09;
+                        </button>
+                      </div>
+                  </div>
+                </div>
+            );
+          }
+
+          return (
+              <div
+                  style={{
+                    width: LANE_WIDTH
+                  }}>
+                <button
+                    onClick={onOpenLaneCallback}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.25)',
+                      fontSize: '16px',
+                      color: 'white',
+                      borderStyle: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}>
+                  &#65291;
+                  Add another lane
+                </button>
+              </div>
+          );
+        }
+
+        const BoardHeader = () => {
+          return (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  height: '40px',
+                  background: 'rgba(255, 255, 255, 0.2)'
+                }}>
+                  <button>
+                    Boards
+                  </button>
+
+                </div>
+            );
+        };
+
+        const Board = () => {
+          const {error, background, title, lanes} = useBoard();
+
+          if (error) {
+            if (error === 'Not Found') {
+              return <BoardNotFound />
+            }
+            // TODO: If "Not Found" show a button to create a Board & Reload the page
+            // TODO: If ID is empty, create a random ID and set the hash location to that.
+            return error;
+          }
+
+          return (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                background
+              }}>
+                <BoardHeader />
+
+                <div>
+                  <button style={{float: 'right'}}>…</button>
+
+                  {title}
+                </div>
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  gap: '10px',
+                  height: '100%',
+                  padding: '40px 10px'
+                }}>
+                  {lanes.map((lane, index) => <Lane key={index} {...lane} />)}
+                  <CreateLane />
+                </div>
+              </div>
+          );
+        };
+
+        const Application = () => {
+          const [id, setId] = React.useState();
+
+          const onHashChange = React.useCallback(
+              () => {
+                if (window.location.hash.length > 0) {
+                  setId(decodeURIComponent(window.location.hash.slice(1)));
+                } else {
+                  setId('');
+                }
+              },
+              []
+          );
+
+          React.useEffect(() => {
+            onHashChange();
+
+            window.addEventListener('hashchange', onHashChange);
+            return () => window.removeEventListener('hashchange', onHashChange);
+          }, [onHashChange]);
+
+          return (
+              <BoardProvider id={id}>
+                <Board/>
+              </BoardProvider>
+          );
+        };
+    </script>
+
+    <script type="text/javascript">
+      window.onload = function() {
+        ReactDOM.render(React.createElement(Application), document.getElementById('root'));
+      }
+    </script>
+    <body>
+        <div id="root"></div>
+    </body>
+</html>
