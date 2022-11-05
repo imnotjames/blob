@@ -1,0 +1,28 @@
+services:
+  - type: redis
+    name: blob-store
+    ipAllowList: []
+    region: ohio
+    plan: free
+  - type: web
+    name: blob-web
+    region: ohio
+    env: node
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: blob-store
+          property: connectionString
+      - key: BLOB_MAX_AGE
+        value: 86400
+      - key: BLOB_MAX_SIZE
+        value: 262144
+      - key: BLOB_SOURCE
+        value: redis
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    domains:
+      - blob.fyi
+      
