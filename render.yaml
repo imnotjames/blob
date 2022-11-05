@@ -7,7 +7,7 @@ services:
   - type: web
     name: blob-web
     region: ohio
-    environment: node
+    env: node
     envVars:
       - key: REDIS_URL
         fromService:
