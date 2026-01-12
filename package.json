@@ -26,7 +26,7 @@
     "http-errors": "^1.8.0",
     "http-link-header": "^1.0.2",
     "ioredis": "^4.17.3",
-    "koa": "^2.13.0",
+    "koa": "^3.0.3",
     "koa-bodyparser": "^4.3.0",
     "koa-logger": "^3.2.1",
     "koa-static": "^5.0.0",
